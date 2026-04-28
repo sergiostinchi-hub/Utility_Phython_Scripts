@@ -5,7 +5,7 @@ Below you can find documentation for each script in this folder:
 ---
 
 ## Response Time Monitor
-[📄 ShellScriptsMonitorApacheLog.md](ShellScriptsMonitorApacheLog.md)
+[📄 ShellScriptsMonitorApacheLog.md](docs/README_ShellScriptsMonitorApacheLog.md)
 
 A modular set of scripts used to monitor http request and reponse for Apache/IHS logs.
 
