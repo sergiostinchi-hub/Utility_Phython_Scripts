@@ -6,6 +6,7 @@
 
 suffix=$(date +%F_%H-%M-%S)
 outfile="/home/$(whoami)/scripts/logs/numReqXMin_$suffix.log"
+
 # ============================
 #   SHELL CHECK
 # ============================
@@ -168,9 +169,11 @@ for u in "${urls[@]}"; do
 done
 
 [[ -n "$http_code" ]] && echo "HTTP code filter:        $http_code" | tee -a "$outfile" || echo "HTTP code filter:        (none)" | tee -a "$outfile"
+
 # ============================================
 #   FORCE LAST MINUTE OVERRIDE (-x)
 # ============================================
+
 if [[ "$force_last_minute" == "yes" ]]; then
     last_line=$(tail -1 "$accesslog")
     last_h=$(echo "$last_line" | awk '{match($0, /:([0-9]{2}):/, t); print t[1]}')
@@ -180,7 +183,7 @@ if [[ "$force_last_minute" == "yes" ]]; then
     range_start=$last_min
     range_end=$last_min
 
-    echo "FORCE-LAST-MINUTE attivo: analisi SOLO del minuto $last_h:$last_m" | tee -a "$outfile"
+    echo "FORCE-LAST-MINUTE active: analyzing ONLY minute $last_h:$last_m" | tee -a "$outfile"
 else
     if [[ -n "$minutes_range" ]]; then
         echo "Time filter:             last $minutes_range minutes (PRIORITY)" | tee -a "$outfile"
@@ -192,6 +195,7 @@ else
         else
             echo "Time filter:             fallback last 5 minutes" | tee -a "$outfile"
         fi
+    fi
 fi
 
 [[ -n "$alert_threshold" ]] && echo "Alert threshold:         $alert_threshold requests/minute" | tee -a "$outfile" || echo "Alert threshold:         (none)" | tee -a "$outfile"
@@ -269,7 +273,9 @@ count_requests() {
 
     awk -v f="$filter" -v cf="$code_filter" -v rs="$start_range" -v re="$end_range" '
         {
-            match($0, /\[([0-9]{2}\/[A-Za-z]{3}\/[0-9]{4}):([0-9]{2}):([0-9]{2})/, t)
+            match($0, /
+
+\[([0-9]{2}\/[A-Za-z]{3}\/[0-9]{4}):([0-9]{2}):([0-9]{2})/, t)
             if (!t[1]) next
 
             hh = t[2] + 0
@@ -303,7 +309,6 @@ count_status_codes_by_server() {
 
     awk -v f="$filter" -v rs="$start_range" -v re="$end_range" '
         {
-            # Estrai timestamp
             match($0, /\[([0-9]{2}\/[A-Za-z]{3}\/[0-9]{4}):([0-9]{2}):([0-9]{2})/, t)
             if (!t[1]) next
 
@@ -314,16 +319,13 @@ count_status_codes_by_server() {
             if (ts < rs || ts > re) next
             if ($0 !~ f) next
 
-            # Estrai application server (senza parentesi)
             match($0, /\[([A-Za-z0-9._-]+\.srv\.[A-Za-z0-9._-]+:[0-9]{4})\]/, s)
             server = s[1]
             if (server == "") next
 
-            # Estrai codice HTTP
             match($0, /" ([0-9]{3}) /, c)
             code = c[1]
 
-            # Conta solo 200, 403, 500
             if (code == 200) count[server,"200"]++
             if (code == 403) count[server,"403"]++
             if (code == 500) count[server,"500"]++
@@ -331,7 +333,6 @@ count_status_codes_by_server() {
             servers[server] = 1
         }
         END {
-            # Ordina alfabeticamente i server
             ns = asorti(servers, s_sorted)
 
             for (i=1; i<=ns; i++) {
@@ -444,90 +445,4 @@ while true; do
 
         while read -r minute count; do
             if [[ -n "$alert_threshold" && $count -gt $alert_threshold ]]; then
-                printf "%-10s %-10s  <== THRESHOLD EXCEEDED %s\n" "$minute" "$count" "$alert_threshold" | tee -a "$outfile"
-            else
-                printf "%-10s %-10s\n" "$minute" "$count" | tee -a "$outfile"
-            fi
-        done <<< "$results"
-
-        echo | tee -a "$outfile"
-
-        mapfile -t minutes < <(echo "$results" | awk '{print $1}')
-        mapfile -t counts  < <(echo "$results" | awk '{print $2}')
-
-        spark=$(sparkline "${counts[@]}")
-
-        echo -e "Sparkline: $spark" | tee -a "$outfile"
-
-        if [[ -n "$alert_threshold" ]]; then
-            for c in "${counts[@]}"; do
-                if (( c > alert_threshold )); then
-                    echo "!!! ALERT DETECTED IN SPARKLINE !!!" | tee -a "$outfile"
-                    break
-                fi
-            done
-        fi
-
-        echo | tee -a "$outfile"
-
-        echo "=== HTTP STATUS REPORT (200;403;500) ===" | tee -a "$outfile"
-
-        status_report=$(echo "$segment" | count_status_codes "$url" /dev/stdin "$range_start" "$range_end")
-
-        if [[ -z "$status_report" ]]; then
-            echo "No 200/500/403 codes found in range" | tee -a "$outfile"
-        else
-            echo "$status_report" | while read -r code count; do
-                printf "%s → %s requests\n" "$code" "$count" | tee -a "$outfile"
-            done
-        fi
-
-        echo | tee -a "$outfile"
-
-        if [[ "$ask_graph" == "yes" ]]; then
-            read -p "Do you want to display the ASCII graph? (y/n): " choice
-            echo
-
-            if [[ "$choice" =~ ^[yY]$ ]]; then
-                echo "ASCII GRAPH" | tee -a "$outfile"
-                echo "-----------" | tee -a "$outfile"
-
-                while read -r minute count; do
-                    ascii_graph "$minute" "$count" "$alert_threshold" | tee -a "$outfile"
-                done <<< "$results"
-
-                echo | tee -a "$outfile"
-            fi
-        fi
-        echo "=== HTTP STATUS REPORT PER APPLICATION SERVER ===" | tee -a "$outfile"
-
-        status_report_srv=$(echo "$segment" | count_status_codes_by_server "$url" /dev/stdin "$range_start" "$range_end")
-
-        if [[ -z "$status_report_srv" ]]; then
-           echo "Nessun server .srv.* trovato nel range" | tee -a "$outfile"
-        else
-           echo "$status_report_srv" | tee -a "$outfile"
-        fi
-
-        echo | tee -a "$outfile"
-    done
-
-    cycle_end_ts=$(date +%s)
-    cycle_end_human=$(date "+%Y-%m-%d %H:%M:%S")
-    cycle_duration=$(( cycle_end_ts - cycle_start_ts ))
-
-    echo "--------------------------------------------------------------" | tee -a "$outfile"
-    echo "Cycle end:   $cycle_end_human" | tee -a "$outfile"
-    echo "Cycle duration: ${cycle_duration}s" | tee -a "$outfile"
-    echo "--------------------------------------------------------------" | tee -a "$outfile"
-    echo | tee -a "$outfile"
-
-    # ONE-SHOT EXIT
-    if [[ "$loop_interval" -eq 0 ]]; then
-        echo "ONE-SHOT mode completed. Exiting script." | tee -a "$outfile"
-        break
-    fi
-
-    sleep "$sleep_seconds"
-done
-
+                printf "%-10s %-10
