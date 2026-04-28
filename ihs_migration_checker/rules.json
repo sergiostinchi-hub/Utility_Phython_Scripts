@@ -1,0 +1,27 @@
+{
+  "deprecated": {
+    "ORDER": "Sostituita da 'Require'. Esempio: Require all granted",
+    "ALLOW": "Sostituita da 'Require'.",
+    "DENY": "Sostituita da 'Require'.",
+    "MAXCLIENTS": "Direttiva Apache 2.2. In Apache 2.4/IHS 9 usare 'MaxRequestWorkers'.",
+    "SSLPROTOCOLENABLE": "Deprecata in IHS 9. Usare 'SSLProtocol'.",
+    "SSLPROTOCOLDISABLE": "Deprecata in IHS 9. Usare 'SSLProtocol'.",
+    "SSLRENEGOTIATION": "Deprecata per motivi di sicurezza. Evitare renegotiation.",
+    "SSLENABLE": "Deprecata nei VirtualHost moderni. Usare <VirtualHost *:443> con SSLEngine on.",
+    "SSLDISABLE": "Deprecata. Usare configurazione SSL moderna.",
+    "KEYFILE": "Deprecata in alcune configurazioni. Preferire 'SSLCertificateFile' e 'SSLCertificateKeyFile'."
+  },
+
+  "changed": {
+    "MAXREQUESTSPERCHILD": "Rinominata in 'MaxConnectionsPerChild' in Apache 2.4/IHS 9.",
+    "MAXREQUESTWORKERS": "Nuova direttiva che sostituisce MaxClients.",
+    "SSLPROTOCOL": "Nuovo formato: es. 'SSLProtocol -TLSv1 -TLSv1.1 +TLSv1.2'.",
+    "SSLATTRIBUTESET": "Formato aggiornato in IHS 9 ma ancora valido.",
+    "TRACKMODULES": "Comportamento aggiornato in IHS 9.",
+    "TRACKHOOKS": "Comportamento aggiornato in IHS 9.",
+    "TRACKHOOKSOPTIONS": "Comportamento aggiornato in IHS 9.",
+    "REPORTINTERVAL": "Valori e semantica aggiornati in IHS 9.",
+    "NETTRACE": "Sintassi aggiornata in IHS 9.",
+    "NETTRACEFILE": "Percorsi e permessi devono rispettare le nuove policy di sicurezza."
+  }
+}
