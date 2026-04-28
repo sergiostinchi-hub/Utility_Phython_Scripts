@@ -19,6 +19,7 @@ Extracts and counts context‑roots from access logs with optional HTTP method f
 ---
 
 ## Access Log Enterprise Analyzer
-[📄 analyze_access_enterprise.md](analyze_access_enterprise.md)
+[📄 analyze_access_enterprise.md](/docs/analize_historical_access.md)
 
 Enterprise‑grade access log analyzer with percentiles, top IPs, and hourly stats.
+/docs/analize_historical_access.md
