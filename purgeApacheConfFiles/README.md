@@ -1,181 +1,192 @@
-    IBM HTTP Server Configuration Usage Checker
-    ==========================================
+# IBM HTTP Server Configuration Usage Checker
 
-    OVERVIEW
-    --------
-    This Bash script analyzes an IBM HTTP Server (IHS) installation to determine
-    which configuration files (.conf) are actually used by control scripts (*ctl*)
-    located in the bin directory.
+## OVERVIEW
 
-    The main goal is to identify unused or obsolete configuration files in a
-    SAFE, READ-ONLY, and DETERMINISTIC way, suitable for audit, cleanup,
-    and pre-upgrade activities.
+This Bash script analyzes an IBM HTTP Server (IHS) installation to determine
+which configuration files (\*.conf) are actually used by control scripts (*ctl*)
+located in the bin directory.
 
-    The script DOES NOT modify any file and DOES NOT start or stop any service.
+The script is designed to be safe, deterministic, audit-friendly, and suitable
+for production environments.
 
+It also supports an optional controlled cleanup step using the --clean option.
 
-    FEATURES
-    --------
-    - Identifies .conf files actively referenced by *ctl* scripts
-    - Maps each .conf file to the ctl file(s) that reference it
-    - Displays the exact non-commented line where the .conf was found
-    - Excludes commented lines and informational messages (echo)
-    - Ignores standard/default IHS installation files
-    - Lists:
-      * Valid configuration files
-      * Configuration files present but NOT used
-      * Non-.conf files (invalid a priori)
-    - POSIX-safe and portable
-    - Production-safe (read-only)
+## FEATURES
 
+*   Detects .conf files referenced by *ctl* scripts
+*   Maps each .conf file to the ctl file(s) that reference it
+*   Displays the exact non-commented line where the .conf was found
+*   Ignores commented lines (#, ;)
+*   Ignores informational lines starting with "echo"
+*   Identifies .conf files present but not used
+*   Identifies non-.conf files (invalid a priori)
+*   Optional safe cleanup (--clean)
+*   No file is deleted (files are only moved)
+*   POSIX-safe, portable, no external dependencies
 
-    DIRECTORY STRUCTURE ANALYZED
-    ----------------------------
-    IBM_HTTP_SERVER_HOME/
-    |
-    |-- bin/      -> control scripts (*ctl*)
-    |
-    `-- conf/     -> configuration files
+## DIRECTORY STRUCTURE
 
+IBM\_HTTP\_SERVER\_HOME/
+|
+\|-- bin/        -> ctl scripts
+|
+\`-- conf/       -> configuration files
 
-    REQUIREMENTS
-    ------------
-    - Bash (version 4 or higher recommended)
-    - Unix/Linux system
-    - Read permissions on:
-      - IBM_HTTP_SERVER_HOME/bin
-      - IBM_HTTP_SERVER_HOME/conf
+## REQUIREMENTS
 
+*   Bash (recommended version 4.x or higher)
+*   Unix / Linux system
+*   Read access to:
+    *   IBM\_HTTP\_SERVER\_HOME/bin
+    *   IBM\_HTTP\_SERVER\_HOME/conf
+*   Write access required only when using --clean
 
-    CONFIGURATION
-    -------------
-    At the beginning of the script, the following variables can be customized:
+## CONFIGURATION
 
-    HTTP_SERVER_HOME="/prod/IBM/HTTPServer"
-    HOME_TMP="/prod/IBM/backup/tmp"
+Main variables defined at the beginning of the script:
 
-    HTTP_SERVER_HOME:
-      Root directory of IBM HTTP Server.
+HTTP\_SERVER\_HOME="/prod/IBM/HTTPServer"
+HOME\_TMP="/prod/IBM/backup/tmp"
 
-    HOME_TMP:
-      Temporary working directory used by the script.
-      Behavior:
-      - If it exists, it is used.
-      - If it does not exist, the script tries to create it.
-      - If creation fails (permissions, filesystem, etc.),
-        the script automatically falls back to a local ./tmp directory.
+HTTP\_SERVER\_HOME
+Root directory of IBM HTTP Server.
 
+HOME\_TMP
+Temporary working directory used by the script.
 
-    DEFAULT FILES IGNORED
-    ---------------------
-    The following files are STANDARD IBM HTTP Server installation files and are
-    explicitly ignored by the script. They do NOT appear in any output section.
+Behavior:
 
-    - admin.conf.default
-    - admin.passwd
-    - httpd.conf.default
-    - java.security.append
-    - magic
-    - magic.default
-    - mime.types
-    - mime.types.default
-    - postinst.properties
-    - ldap.prop.sample
+*   If it exists, it is used
+*   If it does not exist, the script tries to create it
+*   If creation fails, a local ./tmp directory is used as fallback
 
+## IGNORED DEFAULT FILES
 
-    USAGE
-    -----
-    Make the script executable and run it:
+The following standard IBM HTTP Server files are ignored during analysis
+and do not appear in any report section:
 
-      chmod +x check_unused_conf.sh
-      ./check_unused_conf.sh
+admin.conf.default
+httpd.conf.default
+java.security.append
+magic
+magic.default
+mime.types
+mime.types.default
+postinst.properties
+ldap.prop.sample
 
-    or explicitly:
+## Sensitive file exception
 
-      bash check_unused_conf.sh
+The following file is NEVER moved, even when --clean is used:
 
+admin.passwd
 
-    DETECTION RULES
-    ---------------
-    A .conf file is considered USED if:
+This is intentional to avoid handling sensitive credentials.
 
-    1) Its filename appears textually inside at least one *ctl* file
-    2) The line where it appears:
-       - does NOT start with '#'
-       - does NOT start with ';'
-       - does NOT start with 'echo'
-    3) The match is purely textual (no variable resolution, no runtime execution)
+## DETECTION RULES
 
-    This conservative approach avoids false positives and ensures deterministic
-    results.
+A .conf file is considered USED if:
 
+1.  Its filename appears textually in at least one *ctl* file
+2.  The matching line:
+    *   does NOT start with #
+    *   does NOT start with ;
+    *   does NOT start with echo
+3.  The match is static (no variable expansion, no runtime evaluation)
 
-    OUTPUT SECTIONS
-    ---------------
+This conservative approach avoids false positives.
 
-    1) CONF VALIDI E RELATIVI CTL
-       --------------------------
-       Lists all .conf files that are actually used.
-       For each file, the output shows:
-       - the ctl file(s) that reference it
-       - the exact matching line (non-commented)
+## USAGE
 
-       Example:
+Analysis only (default, safe):
 
-         httpd_EQUSA0010.conf -> apachectl_EQUSA0010
-             >> [apachectl_EQUSA0010] IHS_CONFIGURATION_FILE=/prod/IBM/HTTPServer/conf/httpd_EQUSA0010.conf
+./check\_unused\_conf.sh
 
+Analysis + safe cleanup:
 
-    2) CONF PRESENTI MA NON UTILIZZATI
-       --------------------------------
-       Lists .conf files found inside the conf directory that are NOT referenced
-       by any ctl file.
+./check\_unused\_conf.sh --clean
 
-       These files are strong candidates for cleanup or further review.
+## CLEAN MODE (--clean)
 
+When --clean is specified:
 
-    3) FILE NON .conf (INVALIDI A PRIORI)
-       ----------------------------------
-       Lists files located in the conf directory which do NOT have a .conf
-       extension and are not part of the default ignore list.
+*   The following directory is created if possible:
 
-       Examples:
-       - backups
-       - renamed files
-       - legacy snapshots
+IBM\_HTTP\_SERVER\_HOME/conf/conf\_unused
 
+*   The following files are MOVED (not deleted):
+    *   .conf files present but not used
+    *   non-.conf files (invalid a priori)
+    *   default ignored files (except admin.passwd)
 
-    SAFETY AND SECURITY
-    -------------------
-    - The script is read-only
-    - No configuration file is modified
-    - No service is started or stopped
-    - No external commands with side effects are used
-    - Safe for execution on production systems
+If the directory cannot be created, the clean step is skipped and the following
+warning is shown:
 
+\[WARN] Impossible to complete cleaning step
 
-    TYPICAL USE CASES
-    -----------------
-    - IBM HTTP Server pre-upgrade validation
-    - Configuration cleanup
-    - Security and compliance audits
-    - Change advisory board (CAB) documentation
-    - Hardening of long-running environments
+Analysis and reporting still complete normally.
 
+## OUTPUT SECTIONS
 
-    DESIGN PHILOSOPHY
-    -----------------
-    - Deterministic behavior
-    - No parsing of runtime logic
-    - No assumptions about variable values
-    - Prefer conservative results over risky automation
+CONF VALIDI E RELATIVI CTL
+Shows .conf files that are actually used, including:
 
+*   the ctl file(s) referencing them
+*   the exact non-commented line where they were found
 
-    LICENSE
-    -------
-    Internal or enterprise use.
-    Adjust licensing according to your organization’s policies.
+Example:
 
+httpd\_EQUSA0010.conf -> apachectl\_EQUSA0010
+\>> \[apachectl\_EQUSA0010] IHS\_CONFIGURATION\_FILE=/prod/IBM/HTTPServer/conf/httpd\_EQUSA0010.conf
 
-    END OF FILE
-    -----------
+CONF PRESENTI MA NON UTILIZZATI
+Lists .conf files found in conf/ that are never referenced by any ctl script.
+These are strong candidates for cleanup.
+
+FILE NON .conf (INVALIDI A PRIORI)
+Lists files located in conf/ that do not have a .conf extension and are not part
+of the default ignore list (e.g. backups, renamed files, snapshots).
+
+## FILES MOVED TO conf\_unused (only with --clean)
+
+When --clean is used, a final section lists all files that were actually moved.
+
+Example:
+
+## FILES MOVED TO /prod/IBM/HTTPServer/conf/conf\_unused
+
+httpd\_old.conf
+mime.types
+magic
+httpd.conf.20220103
+
+## SAFETY GUARANTEES
+
+*   No file is modified unless --clean is explicitly specified
+*   No file is deleted
+*   No service is started or stopped
+*   Suitable for production systems
+*   Designed for audit and compliance use cases
+
+## TYPICAL USE CASES
+
+*   IBM HTTP Server upgrade preparation
+*   Configuration cleanup
+*   Environment hardening
+*   Compliance and audit reporting
+*   Change Advisory Board (CAB) documentation
+
+## DESIGN PRINCIPLES
+
+*   Deterministic behavior
+*   No runtime interpretation
+*   No guessing or implicit assumptions
+*   Conservative results preferred over risky automation
+
+## LICENSE
+
+Internal or enterprise use.
+Adapt licensing according to your organization’s policies.
+
+## END OF FILE
+
