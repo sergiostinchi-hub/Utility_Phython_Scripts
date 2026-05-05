@@ -29,10 +29,10 @@ located in the bin directory.
 ## IBM HTTP Server Instances Manager 
 [📄 ManageIHSInstances.md](IHSManagerUtility/ManageUHSInstance.md)
 
-This Bash script analyzes an IBM HTTP Server (IHS) installation to determine
-which configuration files (.conf) are actually used by control scripts (*ctl*)
-located in the bin directory.
+A robust and production‑ready management script for **IBM HTTP Server (IHS)** instances.  
+It automatically analyzes configuration files, maps them to their corresponding `apachectl` scripts, and provides safe operations such as **start**, **stop**, **status**, and **cleanup**.
+
 
 ---
 
-IHSManagerUtility/ManageUHSInstance.md
+
