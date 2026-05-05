@@ -26,6 +26,13 @@ which configuration files (.conf) are actually used by control scripts (*ctl*)
 located in the bin directory.
 
 ---
+## IBM HTTP Server Instances Manager 
+[📄 ManageIHSInstances.md](IHSManagerUtility/ManageUHSInstance.md)
 
+This Bash script analyzes an IBM HTTP Server (IHS) installation to determine
+which configuration files (.conf) are actually used by control scripts (*ctl*)
+located in the bin directory.
 
+---
 
+IHSManagerUtility/ManageUHSInstance.md
