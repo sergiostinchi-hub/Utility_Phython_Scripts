@@ -51,6 +51,8 @@ DEFAULT_IGNORE_FILES=(
   mime.types.default
   postinst.properties
   ldap.prop.sample
+  httpd.conf
+  workbench.xmi
 )
 
 # File sensibile: NON DEVE MAI ESSERE MOSSO
@@ -164,6 +166,12 @@ if [ "$DO_CLEAN" -eq 1 ]; then
     # conf non utilizzati
     while read -r FILE; do
       [ -f "$CONF_DIR/$FILE" ] || continue
+
+      if is_in_list "$FILE" "${DEFAULT_IGNORE_FILES[@]}" "${SENSITIVE_NO_CLEAN_FILES[@]}"; then
+        echo "[INFO] Skipping default/sensitive file: $FILE"
+        continue
+      fi
+
       mv "$CONF_DIR/$FILE" "$CONF_UNUSED_DIR/"
       echo "$FILE" >> "$FILES_MOVED"
       echo "[INFO] Moved unused conf: $FILE"
@@ -172,18 +180,17 @@ if [ "$DO_CLEAN" -eq 1 ]; then
     # file non .conf
     while read -r FILE; do
       [ -f "$CONF_DIR/$FILE" ] || continue
+
+      if is_in_list "$FILE" "${DEFAULT_IGNORE_FILES[@]}" "${SENSITIVE_NO_CLEAN_FILES[@]}"; then
+        echo "[INFO] Skipping default/sensitive file: $FILE"
+        continue
+      fi
+
       mv "$CONF_DIR/$FILE" "$CONF_UNUSED_DIR/"
       echo "$FILE" >> "$FILES_MOVED"
       echo "[INFO] Moved invalid file: $FILE"
     done < "$INVALID_CONF"
 
-    # file di default (escluso admin.passwd)
-    for FILE in "${DEFAULT_IGNORE_FILES[@]}"; do
-      [ -f "$CONF_DIR/$FILE" ] || continue
-      mv "$CONF_DIR/$FILE" "$CONF_UNUSED_DIR/"
-      echo "$FILE" >> "$FILES_MOVED"
-      echo "[INFO] Moved default IHS file: $FILE"
-    done
   fi
 fi
 
@@ -218,3 +225,4 @@ fi
 
 echo
 echo "[INFO] Script completed successfully"
+
